@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="مفتاح البرمجة: تعلّم C++ وHTML وقواعد البيانات باستخدام كلمات عربية، مع ترجمة فورية وتنفيذ داخل المتصفح.">
+  <meta name="theme-color" content="#16312f">
+  <title>مفتاح البرمجة | تعلّم البرمجة بالعربية</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="page-glow" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand" aria-label="مفتاح البرمجة">
+        <span class="brand-mark" aria-hidden="true">م</span>
+        <span class="brand-copy">
+          <strong>مِفتاح البرمجة</strong>
+          <span>تعلّم البرمجة بالكلمات العربية</span>
+        </span>
+      </div>
+
+      <div class="header-meta">
+        <span class="edition-pill">نسخة الصفوف الأولى</span>
+        <span class="header-note">C++ · HTML · SQL</span>
+      </div>
+    </div>
+
+    <div class="tabs-row">
+      <nav id="language-tabs" class="language-tabs" role="tablist" aria-label="اختر لغة التعلم"></nav>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="panel editor-panel" aria-labelledby="editor-title">
+      <div class="panel-head">
+        <div class="panel-heading">
+          <p class="panel-kicker">اكتب هنا</p>
+          <h1 id="editor-title" class="panel-title">أساسيات C++</h1>
+          <p id="editor-description" class="panel-description"></p>
+        </div>
+
+        <label class="sample-picker">
+          <span>المثال</span>
+          <select id="sample-select"></select>
+        </label>
+      </div>
+
+      <div class="editor-frame" dir="rtl">
+        <div id="line-numbers" class="line-numbers" aria-hidden="true"></div>
+        <textarea
+          id="code-editor"
+          class="code-editor"
+          dir="rtl"
+          wrap="off"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          aria-label="محرر الكود العربي"
+        ></textarea>
+      </div>
+
+      <details id="stdin-details" class="stdin-box">
+        <summary>مدخلات البرنامج (اختياري)</summary>
+        <textarea
+          id="stdin-input"
+          class="stdin-input"
+          dir="ltr"
+          spellcheck="false"
+          placeholder="ضع كل قيمة في سطر مستقل"
+        ></textarea>
+      </details>
+
+      <section id="generated-wrap" class="generated-wrap" hidden aria-label="الكود المترجم">
+        <div class="generated-head">
+          <span id="generated-label">كود C++ المترجم</span>
+          <button id="copy-generated" class="ghost-button tiny" type="button">نسخ</button>
+        </div>
+        <pre id="generated-code" class="generated-code" dir="ltr"></pre>
+      </section>
+
+      <div class="panel-actions">
+        <div class="primary-actions">
+          <button id="run-button" class="primary-button" type="button">شغّل C++</button>
+          <button id="reset-sample" class="ghost-button" type="button">استعادة المثال</button>
+          <button id="reset-database" class="ghost-button danger" type="button" hidden>إعادة ضبط البيانات</button>
+        </div>
+
+        <div class="secondary-actions">
+          <button id="toggle-generated" class="ghost-button" type="button" aria-pressed="false">عرض الكود المترجم</button>
+          <span class="shortcut-hint">Ctrl + Enter للتشغيل</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel output-panel" aria-labelledby="output-title">
+      <div class="panel-head output-head">
+        <div class="panel-heading">
+          <p class="panel-kicker">النتيجة</p>
+          <h2 id="output-title" class="panel-title">المخرجات والمعاينة</h2>
+        </div>
+
+        <span id="status" class="status" data-status="ready">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-text">جاهز</span>
+        </span>
+      </div>
+
+      <div id="output" class="output" aria-live="polite"></div>
+    </section>
+
+    <aside class="panel reference-panel" aria-labelledby="reference-title">
+      <div class="panel-head">
+        <div class="panel-heading">
+          <p class="panel-kicker">مرجع سريع</p>
+          <h2 id="reference-title" class="panel-title">قاموس الكلمات</h2>
+        </div>
+      </div>
+
+      <div id="reference-content" class="reference-content"></div>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    <p>مفتاح البرمجة: جسر عربي إلى <bdi dir="ltr">C++</bdi> وHTML وSQL. الكود المترجم قابل للنسخ والتشغيل في بيئة حقيقية.</p>
+    <p class="footer-sub">يعمل المشغّل التجريبي داخل المتصفح دون إرسال الكود إلى خادم.</p>
+  </footer>
+
+  <noscript>
+    <p class="noscript-message">يحتاج هذا التطبيق إلى JavaScript للترجمة والتنفيذ داخل المتصفح.</p>
+  </noscript>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

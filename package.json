@@ -1,0 +1,15 @@
+{
+  "name": "arabic-code-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "مفتاح البرمجة: تعلّم C++ وHTML وSQL باستخدام كلمات عربية",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
