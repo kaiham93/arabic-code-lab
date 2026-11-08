@@ -29,6 +29,7 @@ const MESSAGES = {
     app: {
       name: 'مِفتاح البرمجة',
       tagline: 'تعلّم البرمجة بالكلمات العربية',
+      brandMark: 'م',
       brandAria: 'مفتاح البرمجة',
       edition: 'نسخة الصفوف الأولى',
       tabsAria: 'اختر لغة التعلم',
@@ -190,6 +191,7 @@ const MESSAGES = {
     app: {
       name: 'Miftah Al-Barmaja',
       tagline: 'Apprenez à programmer avec des mots arabes',
+      brandMark: 'M',
       brandAria: 'Miftah Al-Barmaja',
       edition: 'Édition débutants',
       tabsAria: "Choisissez un langage d'apprentissage",
@@ -351,6 +353,7 @@ const MESSAGES = {
     app: {
       name: 'Urufunguzo rwa Porogaramu',
       tagline: "Wiga porogaramu ukoresheje amagambo y'Icyarabu",
+      brandMark: 'U',
       brandAria: 'Urufunguzo rwa Porogaramu',
       edition: "Verisiyo y'abatangira",
       tabsAria: 'Hitamo ururimi wiga',
