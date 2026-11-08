@@ -173,6 +173,8 @@ export function transpileHtml(source) {
           line,
           column,
           hint: 'أضف --> لإغلاق التعليق.',
+          summaryKey: 'html.unclosedComment',
+          hintKey: 'html.unclosedComment',
         });
       }
       output += source.slice(position, commentEnd + 3);
@@ -199,6 +201,8 @@ export function transpileHtml(source) {
         line,
         column,
         hint: 'أضف > في نهاية الوسم.',
+        summaryKey: 'html.unclosedTag',
+        hintKey: 'html.unclosedTag',
       });
     }
 

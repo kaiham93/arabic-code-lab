@@ -1,4 +1,5 @@
 import { isolateBidiTokens } from '../core/text.js';
+import { t, translateError, warningText } from '../i18n.js';
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -12,45 +13,47 @@ function clear(container) {
   container.scrollTop = 0;
 }
 
-function renderWarnings(container, warnings) {
+function renderWarnings(container, warnings, warningKeys = []) {
   if (!warnings || warnings.length === 0) return;
 
   const box = element('aside', 'warning-card');
-  box.append(element('p', 'callout-title', 'ملاحظة'));
+  box.append(element('p', 'callout-title', t('output.warningTitle')));
 
   const list = element('ul', 'callout-list');
-  for (const warning of warnings) {
-    list.append(element('li', '', isolateBidiTokens(warning)));
-  }
+  warnings.forEach((warning, index) => {
+    const text = warningKeys[index] ? warningText(warningKeys[index]) : warningText(warning);
+    list.append(element('li', '', isolateBidiTokens(text)));
+  });
 
   box.append(list);
   container.append(box);
 }
 
-function renderError(container, error, fallbackTitle = 'تعذّر إكمال العملية') {
+function renderError(container, error, fallbackTitleKey = 'output.errorTitle') {
   const article = element('article', 'error-card');
   article.setAttribute('role', 'alert');
+  const localized = translateError(error);
 
-  article.append(element('p', 'error-title', isolateBidiTokens(fallbackTitle)));
+  article.append(element('p', 'error-title', isolateBidiTokens(t(fallbackTitleKey))));
 
-  const summary = error?.summary || error?.message || 'حدث خطأ غير متوقع.';
+  const summary = localized.summary || t('output.unexpectedError');
   article.append(element('p', 'error-summary', isolateBidiTokens(summary)));
 
-  if (error?.line) {
-    const location = error.column
-      ? `السطر ${error.line}، العمود ${error.column}`
-      : `السطر ${error.line}`;
+  if (localized.line) {
+    const location = localized.column
+      ? t('output.lineColumn', { line: localized.line, column: localized.column })
+      : t('output.lineOnly', { line: localized.line });
     article.append(element('p', 'error-location', location));
   }
 
-  if (error?.hint) {
-    article.append(element('p', 'error-hint', isolateBidiTokens(error.hint)));
+  if (localized.hint) {
+    article.append(element('p', 'error-hint', isolateBidiTokens(localized.hint)));
   }
 
-  const detailsText = error?.details;
+  const detailsText = localized.details;
   if (detailsText && detailsText !== summary) {
     const details = element('details', 'error-details');
-    details.append(element('summary', '', 'تفاصيل تقنية'));
+    details.append(element('summary', '', t('output.technicalDetails')));
 
     const pre = element('pre', 'error-raw', detailsText);
     pre.dir = 'ltr';
@@ -80,11 +83,11 @@ function renderRunMeta(container, { durationMs, exitCode } = {}) {
   const parts = [];
 
   if (Number.isFinite(durationMs)) {
-    parts.push(`مدة التنفيذ: ${durationMs} مللي ثانية`);
+    parts.push(t('output.duration', { ms: durationMs }));
   }
 
   if (Number.isInteger(exitCode) && exitCode !== 0) {
-    parts.push(`رمز الخروج: ${exitCode}`);
+    parts.push(t('output.exitCode', { code: exitCode }));
   }
 
   if (parts.length === 0) return;
@@ -98,7 +101,7 @@ function normalizeCell(value) {
   }
 
   if (value instanceof Uint8Array) {
-    return { text: '[بيانات ثنائية]', className: 'binary-value' };
+    return { text: t('output.binary'), className: 'binary-value' };
   }
 
   if (typeof value === 'number') {
@@ -108,7 +111,7 @@ function normalizeCell(value) {
   return { text: String(value), className: '' };
 }
 
-function buildTable({ name, columns, values }, { caption = '', emptyText = 'لا توجد صفوف.' } = {}) {
+function buildTable({ name, columns, values }, { caption = '', emptyText = t('output.noRows') } = {}) {
   const wrap = element('div', 'table-wrap');
   const table = element('table', 'data-table');
   table.dir = 'rtl';
@@ -121,7 +124,7 @@ function buildTable({ name, columns, values }, { caption = '', emptyText = 'لا
   const headerRow = element('tr');
 
   if (!columns || columns.length === 0) {
-    const th = element('th', '', name || 'الجدول');
+    const th = element('th', '', name || t('output.table'));
     headerRow.append(th);
   } else {
     for (const column of columns) {
@@ -158,7 +161,7 @@ function buildTable({ name, columns, values }, { caption = '', emptyText = 'لا
   return wrap;
 }
 
-function renderTables(container, tables, { open = false, title = 'بيانات الجداول الحالية' } = {}) {
+function renderTables(container, tables, { open = false, title = t('output.currentTables') } = {}) {
   if (!tables || tables.length === 0) return;
 
   const details = element('details', 'db-preview');
@@ -178,7 +181,7 @@ export function renderWelcome(container, language) {
   clear(container);
 
   const card = element('section', 'welcome-card');
-  card.append(element('p', 'welcome-kicker', 'جاهز للبدء'));
+  card.append(element('p', 'welcome-kicker', t('output.welcomeKicker')));
   card.append(element('h2', 'welcome-title', isolateBidiTokens(language.welcomeTitle)));
   card.append(element('p', 'welcome-text', isolateBidiTokens(language.welcomeText)));
 
@@ -193,7 +196,7 @@ export function renderWelcome(container, language) {
   container.append(card);
 }
 
-export function renderLoading(container, message = 'جارٍ التنفيذ...') {
+export function renderLoading(container, message = t('output.loadingDefault')) {
   clear(container);
 
   const card = element('section', 'loading-card');
@@ -206,21 +209,21 @@ export function renderLoading(container, message = 'جارٍ التنفيذ...')
 
 export function renderCppResult(container, data) {
   clear(container);
-  renderWarnings(container, data.warnings);
+  renderWarnings(container, data.warnings, data.warningKeys);
 
   if (data.error) {
-    renderError(container, data.error, 'تعذّر تنفيذ برنامج C++');
+    renderError(container, data.error, 'output.cppErrorTitle');
   }
 
   if (data.output) {
     if (data.error) {
-      container.append(element('h3', 'output-heading', 'ما طُبع قبل الخطأ'));
+      container.append(element('h3', 'output-heading', t('output.printedBeforeError')));
     }
     renderConsole(container, data.output);
   }
 
   if (!data.error && !data.output) {
-    const empty = element('p', 'empty-output', 'انتهى البرنامج دون مخرجات.');
+    const empty = element('p', 'empty-output', t('output.emptyOutput'));
     container.append(empty);
   }
 
@@ -231,30 +234,24 @@ export function renderSqlBootstrap(container, { tables, error } = {}) {
   clear(container);
 
   if (error) {
-    renderError(container, error, 'تعذّر تجهيز قاعدة البيانات');
+    renderError(container, error, 'output.sqlBootstrapErrorTitle');
     return;
   }
 
   const card = element('section', 'welcome-card compact');
-  card.append(element('p', 'welcome-kicker', 'قاعدة البيانات جاهزة'));
-  card.append(element('h2', 'welcome-title', 'بيانات تجريبية بين يديك'));
-  card.append(
-    element(
-      'p',
-      'welcome-text',
-      'اكتب استعلامك بالعربية ثم اضغط «نفّذ الاستعلام». يمكنك إضافة صفوف أو تعديل البيانات، وستبقى التغييرات حتى تعيد الضبط.',
-    ),
-  );
+  card.append(element('p', 'welcome-kicker', t('output.databaseReadyKicker')));
+  card.append(element('h2', 'welcome-title', t('output.databaseReadyTitle')));
+  card.append(element('p', 'welcome-text', t('output.databaseReadyText')));
   container.append(card);
 
-  renderTables(container, tables, { open: true, title: 'جداول قاعدة البيانات التجريبية' });
+  renderTables(container, tables, { open: true, title: t('output.experimentalTablesTitle') });
 }
 
 export function renderSqlResult(container, data) {
   clear(container);
 
   if (data.error) {
-    renderError(container, data.error, 'تعذّر تنفيذ استعلام SQL');
+    renderError(container, data.error, 'output.sqlErrorTitle');
     renderTables(container, data.tables, { open: false });
     return;
   }
@@ -270,8 +267,8 @@ export function renderSqlResult(container, data) {
           'div',
           'result-heading',
           data.results.length > 1
-            ? `النتيجة ${index + 1} • ${rowCount} صف`
-            : `النتيجة • ${rowCount} صف`,
+            ? t('output.resultHeadingMultiple', { index: index + 1, rows: rowCount })
+            : t('output.resultHeadingSingle', { rows: rowCount }),
         ),
       );
       section.append(buildTable(result));
@@ -279,15 +276,15 @@ export function renderSqlResult(container, data) {
     });
   } else if (data.modified > 0) {
     const notice = element('div', 'success-card');
-    notice.append(element('p', 'success-title', 'تم تنفيذ الأمر بنجاح'));
+    notice.append(element('p', 'success-title', t('output.successTitle')));
     notice.append(
-      element('p', 'success-text', `الصفوف المتأثرة: ${data.modified}. يمكنك كتابة استعلام اختر لعرض البيانات.`),
+      element('p', 'success-text', t('output.affectedRows', { count: data.modified })),
     );
     container.append(notice);
   } else {
     const notice = element('div', 'success-card');
-    notice.append(element('p', 'success-title', 'تم تنفيذ الأمر بنجاح'));
-    notice.append(element('p', 'success-text', 'لم يكن للأمر نتائج لعرضها.'));
+    notice.append(element('p', 'success-title', t('output.successTitle')));
+    notice.append(element('p', 'success-text', t('output.noResults')));
     container.append(notice);
   }
 
@@ -295,15 +292,15 @@ export function renderSqlResult(container, data) {
   renderTables(container, data.tables, { open: !hasResults });
 }
 
-export function renderHtmlResult(container, { document: previewDocument, warnings }) {
+export function renderHtmlResult(container, { document: previewDocument, warnings, warningKeys }) {
   clear(container);
-  renderWarnings(container, warnings);
+  renderWarnings(container, warnings, warningKeys);
 
   const toolbar = element('div', 'preview-toolbar');
-  toolbar.append(element('span', 'preview-label', 'معاينة مباشرة'));
-  toolbar.append(element('span', 'preview-note', 'JavaScript معطّل داخل المعاينة'));
+  toolbar.append(element('span', 'preview-label', t('output.previewLabel')));
+  toolbar.append(element('span', 'preview-note', t('output.previewNote')));
 
-  const openButton = element('button', 'ghost-button small', 'فتح في نافذة جديدة');
+  const openButton = element('button', 'ghost-button small', t('output.openNewWindow'));
   openButton.type = 'button';
   openButton.addEventListener('click', () => {
     const url = URL.createObjectURL(
@@ -316,7 +313,7 @@ export function renderHtmlResult(container, { document: previewDocument, warning
 
   const frame = element('iframe', 'preview-frame');
   frame.setAttribute('sandbox', '');
-  frame.setAttribute('title', 'معاينة صفحة HTML');
+  frame.setAttribute('title', t('output.iframeTitle'));
   frame.srcdoc = previewDocument;
 
   container.append(toolbar, frame);
@@ -324,5 +321,5 @@ export function renderHtmlResult(container, { document: previewDocument, warning
 
 export function renderTranspileError(container, error) {
   clear(container);
-  renderError(container, error, 'تعذّر تحويل الكود العربي');
+  renderError(container, error, 'output.transpileErrorTitle');
 }

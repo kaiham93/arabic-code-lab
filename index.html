@@ -14,22 +14,30 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <div class="brand" aria-label="مفتاح البرمجة">
+      <div class="brand" aria-label="مفتاح البرمجة" data-i18n-aria-label="app.brandAria">
         <span class="brand-mark" aria-hidden="true">م</span>
         <span class="brand-copy">
-          <strong>مِفتاح البرمجة</strong>
-          <span>تعلّم البرمجة بالكلمات العربية</span>
+          <strong data-i18n="app.name">مِفتاح البرمجة</strong>
+          <span data-i18n="app.tagline">تعلّم البرمجة بالكلمات العربية</span>
         </span>
       </div>
 
       <div class="header-meta">
-        <span class="edition-pill">نسخة الصفوف الأولى</span>
+        <label class="locale-picker">
+          <span data-i18n="app.localeLabel">اللغة</span>
+          <select id="locale-select" data-i18n-aria-label="app.localeAria">
+            <option value="ar">العربية</option>
+            <option value="fr">Français</option>
+            <option value="rw">Ikinyarwanda</option>
+          </select>
+        </label>
+        <span class="edition-pill" data-i18n="app.edition">نسخة الصفوف الأولى</span>
         <span class="header-note">C++ · HTML · SQL</span>
       </div>
     </div>
 
     <div class="tabs-row">
-      <nav id="language-tabs" class="language-tabs" role="tablist" aria-label="اختر لغة التعلم"></nav>
+      <nav id="language-tabs" class="language-tabs" role="tablist" aria-label="اختر لغة التعلم" data-i18n-aria-label="app.tabsAria"></nav>
     </div>
   </header>
 
@@ -37,13 +45,13 @@
     <section class="panel editor-panel" aria-labelledby="editor-title">
       <div class="panel-head">
         <div class="panel-heading">
-          <p class="panel-kicker">اكتب هنا</p>
+          <p class="panel-kicker" data-i18n="editor.kicker">اكتب هنا</p>
           <h1 id="editor-title" class="panel-title">أساسيات C++</h1>
           <p id="editor-description" class="panel-description"></p>
         </div>
 
         <label class="sample-picker">
-          <span>المثال</span>
+          <span data-i18n="editor.sampleLabel">المثال</span>
           <select id="sample-select"></select>
         </label>
       </div>
@@ -60,24 +68,26 @@
           autocomplete="off"
           autocorrect="off"
           aria-label="محرر الكود العربي"
+          data-i18n-aria-label="editor.editorAria"
         ></textarea>
       </div>
 
       <details id="stdin-details" class="stdin-box">
-        <summary>مدخلات البرنامج (اختياري)</summary>
+        <summary data-i18n="editor.stdinSummary">مدخلات البرنامج (اختياري)</summary>
         <textarea
           id="stdin-input"
           class="stdin-input"
           dir="ltr"
           spellcheck="false"
           placeholder="ضع كل قيمة في سطر مستقل"
+          data-i18n-placeholder="editor.stdinPlaceholder"
         ></textarea>
       </details>
 
-      <section id="generated-wrap" class="generated-wrap" hidden aria-label="الكود المترجم">
+      <section id="generated-wrap" class="generated-wrap" hidden aria-label="الكود المترجم" data-i18n-aria-label="editor.generatedAria">
         <div class="generated-head">
           <span id="generated-label">كود C++ المترجم</span>
-          <button id="copy-generated" class="ghost-button tiny" type="button">نسخ</button>
+          <button id="copy-generated" class="ghost-button tiny" type="button" data-i18n="editor.copy">نسخ</button>
         </div>
         <pre id="generated-code" class="generated-code" dir="ltr"></pre>
       </section>
@@ -85,13 +95,13 @@
       <div class="panel-actions">
         <div class="primary-actions">
           <button id="run-button" class="primary-button" type="button">شغّل C++</button>
-          <button id="reset-sample" class="ghost-button" type="button">استعادة المثال</button>
-          <button id="reset-database" class="ghost-button danger" type="button" hidden>إعادة ضبط البيانات</button>
+          <button id="reset-sample" class="ghost-button" type="button" data-i18n="editor.resetSample">استعادة المثال</button>
+          <button id="reset-database" class="ghost-button danger" type="button" hidden data-i18n="editor.resetDatabase">إعادة ضبط البيانات</button>
         </div>
 
         <div class="secondary-actions">
-          <button id="toggle-generated" class="ghost-button" type="button" aria-pressed="false">عرض الكود المترجم</button>
-          <span class="shortcut-hint">Ctrl + Enter للتشغيل</span>
+          <button id="toggle-generated" class="ghost-button" type="button" aria-pressed="false" data-i18n="editor.showGenerated">عرض الكود المترجم</button>
+          <span class="shortcut-hint" data-i18n="editor.shortcut">Ctrl + Enter للتشغيل</span>
         </div>
       </div>
     </section>
@@ -99,8 +109,8 @@
     <section class="panel output-panel" aria-labelledby="output-title">
       <div class="panel-head output-head">
         <div class="panel-heading">
-          <p class="panel-kicker">النتيجة</p>
-          <h2 id="output-title" class="panel-title">المخرجات والمعاينة</h2>
+          <p class="panel-kicker" data-i18n="output.kicker">النتيجة</p>
+          <h2 id="output-title" class="panel-title" data-i18n="output.title">المخرجات والمعاينة</h2>
         </div>
 
         <span id="status" class="status" data-status="ready">
@@ -115,8 +125,8 @@
     <aside class="panel reference-panel" aria-labelledby="reference-title">
       <div class="panel-head">
         <div class="panel-heading">
-          <p class="panel-kicker">مرجع سريع</p>
-          <h2 id="reference-title" class="panel-title">قاموس الكلمات</h2>
+          <p class="panel-kicker" data-i18n="reference.kicker">مرجع سريع</p>
+          <h2 id="reference-title" class="panel-title" data-i18n="reference.title">قاموس الكلمات</h2>
         </div>
       </div>
 
@@ -125,12 +135,12 @@
   </main>
 
   <footer class="site-footer">
-    <p>مفتاح البرمجة: جسر عربي إلى <bdi dir="ltr">C++</bdi> وHTML وSQL. الكود المترجم قابل للنسخ والتشغيل في بيئة حقيقية.</p>
-    <p class="footer-sub">يعمل المشغّل التجريبي داخل المتصفح دون إرسال الكود إلى خادم.</p>
+    <p data-i18n-html="footer.line">مفتاح البرمجة: جسر عربي إلى <bdi dir="ltr">C++</bdi> وHTML وSQL. الكود المترجم قابل للنسخ والتشغيل في بيئة حقيقية.</p>
+    <p class="footer-sub" data-i18n="footer.sub">يعمل المشغّل التجريبي داخل المتصفح دون إرسال الكود إلى خادم.</p>
   </footer>
 
   <noscript>
-    <p class="noscript-message">يحتاج هذا التطبيق إلى JavaScript للترجمة والتنفيذ داخل المتصفح.</p>
+    <p class="noscript-message" data-i18n="noscript">يحتاج هذا التطبيق إلى JavaScript للترجمة والتنفيذ داخل المتصفح.</p>
   </noscript>
 
   <script type="module" src="src/app.js"></script>

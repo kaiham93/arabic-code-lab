@@ -13,6 +13,15 @@ import {
 } from './runtimes/sql.js';
 import { createEditor } from './ui/editor.js';
 import {
+  getLocale,
+  keywordNote,
+  languageUi,
+  localeInfo,
+  setLocale,
+  t,
+  translateError,
+} from './i18n.js';
+import {
   renderCppResult,
   renderHtmlResult,
   renderLoading,
@@ -24,6 +33,8 @@ import {
 
 const dom = {
   tabs: document.getElementById('language-tabs'),
+  localeSelect: document.getElementById('locale-select'),
+  metaDescription: document.querySelector('meta[name="description"]'),
   editorTitle: document.getElementById('editor-title'),
   editorDescription: document.getElementById('editor-description'),
   sampleSelect: document.getElementById('sample-select'),
@@ -77,8 +88,11 @@ function transpileFor(languageId, source) {
 
 function toErrorState(error) {
   return {
-    summary: error?.message || 'حدث خطأ غير متوقع.',
+    summary: error?.message || t('errors.generic.unknown.summary'),
     hint: error?.hint || '',
+    summaryKey: error?.summaryKey || '',
+    hintKey: error?.hintKey || '',
+    params: error?.params || {},
     line: error?.line ?? null,
     column: error?.column ?? null,
     details: error?.details || '',
@@ -87,14 +101,15 @@ function toErrorState(error) {
 
 function setStatus(status) {
   dom.status.dataset.status = status.kind;
-  dom.statusText.textContent = isolateBidiTokens(status.text);
+  const text = status.key ? t(status.key, status.params) : status.text;
+  dom.statusText.textContent = isolateBidiTokens(text);
 }
 
 function buildTabs() {
   const fragment = document.createDocumentFragment();
 
   LANGUAGE_ORDER.forEach((languageId) => {
-    const language = LANGUAGES[languageId];
+    const language = languageUi(languageId);
     const button = element('button', 'tab', isolateBidiTokens(language.tabLabel));
     button.type = 'button';
     button.id = `tab-${languageId}`;
@@ -120,7 +135,7 @@ function updateTabs() {
 }
 
 function populateSamples(languageId) {
-  const language = LANGUAGES[languageId];
+  const language = languageUi(languageId);
   const options = language.samples.map((sample, index) => {
     return new Option(`${sample.title} · ${sample.description}`, String(index));
   });
@@ -161,38 +176,43 @@ function renderCurrentOutput() {
       renderTranspileError(dom.output, outputState.error);
       break;
     case 'loading':
-      renderLoading(dom.output, outputState.message);
+      renderLoading(
+        dom.output,
+        outputState.messageKey ? t(outputState.messageKey) : outputState.message,
+      );
       break;
     case 'welcome':
     default:
-      renderWelcome(dom.output, LANGUAGES[state.active]);
+      renderWelcome(dom.output, languageUi(state.active));
       break;
   }
 }
 
 function updateGeneratedPreview(precomputed = null) {
   const languageId = state.active;
-  const language = LANGUAGES[languageId];
+  const language = languageUi(languageId);
   dom.generatedLabel.textContent = isolateBidiTokens(language.generatedLabel);
   dom.generatedCode.classList.remove('has-error');
 
   try {
     const transpiled = precomputed || transpileFor(languageId, state.code[languageId]);
-    dom.generatedCode.textContent = transpiled.code.trimEnd() || '// لا يوجد كود بعد.';
+    dom.generatedCode.textContent = transpiled.code.trimEnd() || t('editor.emptyGenerated');
   } catch (error) {
-    dom.generatedCode.textContent = `// ${error.message}`;
+    const message = translateError(error).summary || error.message;
+    dom.generatedCode.textContent = `// ${message}`;
     dom.generatedCode.classList.add('has-error');
   }
 }
 
-function renderKeywordTable(title, entries, targetLabel) {
+function renderKeywordTable(title, entries, targetLabel, languageId) {
   const section = element('section', 'ref-section');
   section.append(element('h3', 'ref-section-title', title));
 
   const table = element('table', 'keyword-table');
+  table.dir = localeInfo().dir;
   const thead = element('thead');
   const headRow = element('tr');
-  headRow.append(element('th', '', 'بالعربية'));
+  headRow.append(element('th', '', t('reference.arabicColumn')));
   headRow.append(element('th', '', targetLabel));
   thead.append(headRow);
   table.append(thead);
@@ -214,8 +234,9 @@ function renderKeywordTable(title, entries, targetLabel) {
     targetCode.dir = 'ltr';
     targetCell.append(targetCode);
 
-    if (entry.note) {
-      targetCell.append(element('span', 'kw-note', entry.note));
+    const note = keywordNote(languageId, entry);
+    if (note) {
+      targetCell.append(element('span', 'kw-note', note));
     }
 
     row.append(targetCell);
@@ -230,7 +251,7 @@ function renderKeywordTable(title, entries, targetLabel) {
 function renderSchema() {
   const language = LANGUAGES.sql;
   const section = element('section', 'ref-section');
-  section.append(element('h3', 'ref-section-title', 'جداول قاعدة البيانات'));
+  section.append(element('h3', 'ref-section-title', t('reference.schemaTitle')));
 
   for (const table of language.tables) {
     const card = element('div', 'schema-card');
@@ -249,13 +270,13 @@ function renderSchema() {
 }
 
 function renderReference() {
-  const language = LANGUAGES[state.active];
+  const language = languageUi(state.active);
   const fragment = document.createDocumentFragment();
 
   const intro = {
-    cpp: 'هذه الكلمات تُفهم داخل محرر C++. الأسماء العربية تتحول تلقائيًا إلى أسماء إنجليزية مناسبة.',
-    html: 'استبدل الوسوم الإنجليزية بوسوم عربية واضحة؛ سيبقى الناتج صفحة HTML قياسية.',
-    sql: 'اكتب أوامر SQL بالعربية على الجداول التجريبية. الكلمات هنا هي الأوامر التي يفهمها المحوّل.',
+    cpp: t('reference.introCpp'),
+    html: t('reference.introHtml'),
+    sql: t('reference.introSql'),
   }[state.active];
 
   fragment.append(element('p', 'ref-intro', isolateBidiTokens(intro)));
@@ -263,16 +284,31 @@ function renderReference() {
   if (state.active === 'cpp' || state.active === 'sql') {
     fragment.append(
       renderKeywordTable(
-        isolateBidiTokens(state.active === 'cpp' ? 'كلمات C++' : 'كلمات SQL'),
+        isolateBidiTokens(state.active === 'cpp' ? t('reference.cppKeywords') : t('reference.sqlKeywords')),
         language.keywords,
-        isolateBidiTokens(state.active === 'cpp' ? 'كود C++' : 'كود SQL'),
+        isolateBidiTokens(state.active === 'cpp' ? t('reference.cppTarget') : t('reference.sqlTarget')),
+        state.active,
       ),
     );
   }
 
   if (state.active === 'html') {
-    fragment.append(renderKeywordTable('وسوم HTML', language.tags, 'وسم HTML'));
-    fragment.append(renderKeywordTable('سمات HTML', language.attributes, 'سمة HTML'));
+    fragment.append(
+      renderKeywordTable(
+        t('reference.htmlTags'),
+        language.tags,
+        t('reference.htmlTagTarget'),
+        'html',
+      ),
+    );
+    fragment.append(
+      renderKeywordTable(
+        t('reference.htmlAttributes'),
+        language.attributes,
+        t('reference.htmlAttrTarget'),
+        'html',
+      ),
+    );
   }
 
   if (state.active === 'sql') {
@@ -280,7 +316,7 @@ function renderReference() {
   }
 
   const tips = element('section', 'tips-card');
-  tips.append(element('h3', 'ref-section-title', 'نصائح سريعة'));
+  tips.append(element('h3', 'ref-section-title', t('reference.tipsTitle')));
   const list = element('ul', 'tips-list');
   for (const tip of language.tips) {
     list.append(element('li', '', isolateBidiTokens(tip)));
@@ -289,6 +325,27 @@ function renderReference() {
   fragment.append(tips);
 
   dom.reference.replaceChildren(fragment);
+}
+
+function updateLanguageChrome(languageId) {
+  const language = languageUi(languageId);
+  dom.editorTitle.textContent = isolateBidiTokens(language.title);
+  dom.editorDescription.textContent = isolateBidiTokens(language.description);
+  dom.runButton.textContent = isolateBidiTokens(language.runLabel);
+  dom.generatedLabel.textContent = isolateBidiTokens(language.generatedLabel);
+  dom.toggleGenerated.textContent = state.generatedVisible
+    ? t('editor.hideGenerated')
+    : t('editor.showGenerated');
+  dom.copyGenerated.textContent = t('editor.copy');
+  dom.stdinDetails.hidden = languageId !== 'cpp';
+  dom.resetDatabaseButton.hidden = languageId !== 'sql';
+
+  if (languageId === 'cpp') {
+    dom.stdinSummary.textContent = language.stdin.label;
+    dom.stdinInput.placeholder = language.stdin.placeholder;
+    const sample = language.samples[state.sampleIndex.cpp];
+    dom.stdinDetails.open = Boolean(sample?.stdin);
+  }
 }
 
 function activateLanguage(languageId, { initial = false } = {}) {
@@ -301,25 +358,12 @@ function activateLanguage(languageId, { initial = false } = {}) {
 
   state.active = languageId;
   updateTabs();
-
-  const language = LANGUAGES[languageId];
-  dom.editorTitle.textContent = isolateBidiTokens(language.title);
-  dom.editorDescription.textContent = isolateBidiTokens(language.description);
-  dom.runButton.textContent = isolateBidiTokens(language.runLabel);
-  dom.generatedLabel.textContent = isolateBidiTokens(language.generatedLabel);
-
+  updateLanguageChrome(languageId);
   populateSamples(languageId);
   editor.setValue(state.code[languageId]);
 
-  dom.stdinDetails.hidden = languageId !== 'cpp';
-  dom.resetDatabaseButton.hidden = languageId !== 'sql';
-
   if (languageId === 'cpp') {
-    dom.stdinSummary.textContent = language.stdin.label;
-    dom.stdinInput.placeholder = language.stdin.placeholder;
     dom.stdinInput.value = state.stdin.cpp || '';
-    const sample = language.samples[state.sampleIndex.cpp];
-    dom.stdinDetails.open = Boolean(sample?.stdin);
   }
 
   updateGeneratedPreview();
@@ -351,7 +395,7 @@ function applySample(index) {
   }
 
   state.outputs[languageId] = defaultOutputFor(languageId);
-  state.status[languageId] = { kind: 'ready', text: 'جاهز' };
+  state.status[languageId] = { kind: 'ready', key: 'status.ready' };
   updateGeneratedPreview();
   renderCurrentOutput();
   setStatus(state.status[languageId]);
@@ -365,8 +409,8 @@ async function prepareSqlTab() {
   if (state.sqlReady) return;
   if (state.outputs.sql.kind !== 'welcome' && !sqlInitializationFailed()) return;
 
-  state.outputs.sql = { kind: 'loading', message: 'جارٍ تجهيز قاعدة البيانات...' };
-  state.status.sql = { kind: 'running', text: 'جارٍ التجهيز...' };
+  state.outputs.sql = { kind: 'loading', messageKey: 'loading.sqlPreparing' };
+  state.status.sql = { kind: 'running', key: 'status.sqlPreparing' };
   renderCurrentOutput();
   setStatus(state.status.sql);
 
@@ -387,7 +431,7 @@ async function prepareSqlTab() {
 
     if (state.outputs.sql.kind === 'loading') {
       state.outputs.sql = { kind: 'sql-bootstrap', data: { tables } };
-      state.status.sql = { kind: 'ready', text: 'قاعدة البيانات جاهزة' };
+      state.status.sql = { kind: 'ready', key: 'status.sqlReady' };
 
       if (state.active === 'sql') {
         renderCurrentOutput();
@@ -397,7 +441,7 @@ async function prepareSqlTab() {
   } catch (error) {
     const errorState = toErrorState(error);
     state.outputs.sql = { kind: 'sql-bootstrap', data: { error: errorState } };
-    state.status.sql = { kind: 'error', text: 'تعذّر تجهيز البيانات' };
+    state.status.sql = { kind: 'error', key: 'status.sqlPrepareError' };
 
     if (state.active === 'sql') {
       renderCurrentOutput();
@@ -437,7 +481,7 @@ async function handleRun() {
   } catch (error) {
     const errorState = toErrorState(error);
     state.outputs[languageId] = { kind: 'transpile-error', error: errorState };
-    state.status[languageId] = { kind: 'error', text: 'يوجد خطأ' };
+    state.status[languageId] = { kind: 'error', key: 'status.error' };
     updateGeneratedPreview();
     renderCurrentOutput();
     setStatus(state.status[languageId]);
@@ -448,14 +492,14 @@ async function handleRun() {
 
   state.running = true;
   dom.runButton.disabled = true;
-  state.status[languageId] = { kind: 'running', text: 'جارٍ التنفيذ...' };
+  state.status[languageId] = { kind: 'running', key: 'status.running' };
   state.outputs[languageId] = {
     kind: 'loading',
-    message: languageId === 'html'
-      ? 'جارٍ تجهيز المعاينة...'
+    messageKey: languageId === 'html'
+      ? 'loading.htmlPreview'
       : languageId === 'sql'
-        ? 'جارٍ تنفيذ الاستعلام...'
-        : 'جارٍ تشغيل البرنامج...',
+        ? 'loading.sqlQuery'
+        : 'loading.cppProgram',
   };
 
   if (state.active === languageId) {
@@ -468,25 +512,33 @@ async function handleRun() {
       const result = await runCpp(transpiled, { input: state.stdin.cpp || '' });
       state.outputs.cpp = {
         kind: 'cpp',
-        data: { ...result, warnings: transpiled.warnings },
+        data: {
+          ...result,
+          warnings: transpiled.warnings,
+          warningKeys: transpiled.warningKeys,
+        },
       };
       state.status.cpp = result.error
-        ? { kind: 'error', text: 'يوجد خطأ' }
-        : { kind: 'success', text: 'تم التشغيل' };
+        ? { kind: 'error', key: 'status.error' }
+        : { kind: 'success', key: 'status.success' };
     } else if (languageId === 'html') {
       const result = runHtml(transpiled);
       state.outputs.html = {
         kind: 'html',
-        data: { ...result, warnings: transpiled.warnings },
+        data: {
+          ...result,
+          warnings: transpiled.warnings,
+          warningKeys: transpiled.warningKeys,
+        },
       };
-      state.status.html = { kind: 'success', text: 'تم العرض' };
+      state.status.html = { kind: 'success', key: 'status.previewing' };
     } else {
       await ensureSqlReady();
       const result = await runSql(transpiled);
       state.outputs.sql = { kind: 'sql', data: result };
       state.status.sql = result.error
-        ? { kind: 'error', text: 'يوجد خطأ' }
-        : { kind: 'success', text: 'تم التنفيذ' };
+        ? { kind: 'error', key: 'status.error' }
+        : { kind: 'success', key: 'status.success' };
     }
   } catch (error) {
     const errorState = toErrorState(error);
@@ -497,7 +549,7 @@ async function handleRun() {
       state.outputs[languageId] = { kind: 'transpile-error', error: errorState };
     }
 
-    state.status[languageId] = { kind: 'error', text: 'تعذّر التنفيذ' };
+    state.status[languageId] = { kind: 'error', key: 'status.executionFailed' };
   } finally {
     state.running = false;
     dom.runButton.disabled = false;
@@ -507,7 +559,7 @@ async function handleRun() {
       setStatus(state.status[languageId]);
     }
 
-    dom.runButton.textContent = isolateBidiTokens(LANGUAGES[state.active].runLabel);
+    dom.runButton.textContent = isolateBidiTokens(languageUi(state.active).runLabel);
 
     if (languageId === 'sql') {
       dom.resetDatabaseButton.disabled = false;
@@ -521,8 +573,8 @@ async function handleResetDatabase() {
   state.running = true;
   dom.runButton.disabled = true;
   dom.resetDatabaseButton.disabled = true;
-  state.outputs.sql = { kind: 'loading', message: 'جارٍ إعادة ضبط البيانات...' };
-  state.status.sql = { kind: 'running', text: 'جارٍ إعادة الضبط...' };
+  state.outputs.sql = { kind: 'loading', messageKey: 'loading.resettingData' };
+  state.status.sql = { kind: 'running', key: 'status.resetting' };
 
   if (state.active === 'sql') {
     renderCurrentOutput();
@@ -533,13 +585,13 @@ async function handleResetDatabase() {
     await ensureSqlReady();
     const { tables } = await resetDatabase();
     state.outputs.sql = { kind: 'sql-bootstrap', data: { tables } };
-    state.status.sql = { kind: 'success', text: 'تمت إعادة الضبط' };
+    state.status.sql = { kind: 'success', key: 'status.resetDone' };
   } catch (error) {
     state.outputs.sql = {
       kind: 'sql-bootstrap',
       data: { error: toErrorState(error) },
     };
-    state.status.sql = { kind: 'error', text: 'تعذّر إعادة الضبط' };
+    state.status.sql = { kind: 'error', key: 'status.resetError' };
   } finally {
     state.running = false;
     dom.runButton.disabled = false;
@@ -557,8 +609,8 @@ function toggleGenerated() {
   dom.generatedWrap.hidden = !state.generatedVisible;
   dom.toggleGenerated.setAttribute('aria-pressed', String(state.generatedVisible));
   dom.toggleGenerated.textContent = state.generatedVisible
-    ? 'إخفاء الكود المترجم'
-    : 'عرض الكود المترجم';
+    ? t('editor.hideGenerated')
+    : t('editor.showGenerated');
 
   if (state.generatedVisible) {
     updateGeneratedPreview();
@@ -573,17 +625,67 @@ async function copyGenerated() {
 
   try {
     await navigator.clipboard.writeText(code);
-    dom.copyGenerated.textContent = 'تم النسخ';
+    dom.copyGenerated.textContent = t('editor.copySuccess');
   } catch {
-    dom.copyGenerated.textContent = 'تعذّر النسخ';
+    dom.copyGenerated.textContent = t('editor.copyFailed');
   }
 
   setTimeout(() => {
-    dom.copyGenerated.textContent = 'نسخ';
+    dom.copyGenerated.textContent = t('editor.copy');
   }, 1600);
 }
 
+function applyStaticTranslations() {
+  const info = localeInfo();
+  document.documentElement.lang = info.htmlLang;
+  document.documentElement.dir = info.dir;
+  document.title = t('meta.title');
+
+  if (dom.metaDescription) {
+    dom.metaDescription.content = t('meta.description');
+  }
+
+  for (const node of document.querySelectorAll('[data-i18n]')) {
+    node.textContent = t(node.dataset.i18n);
+  }
+
+  for (const node of document.querySelectorAll('[data-i18n-placeholder]')) {
+    node.placeholder = t(node.dataset.i18nPlaceholder);
+  }
+
+  for (const node of document.querySelectorAll('[data-i18n-aria-label]')) {
+    node.setAttribute('aria-label', t(node.dataset.i18nAriaLabel));
+  }
+
+  for (const node of document.querySelectorAll('[data-i18n-title]')) {
+    node.title = t(node.dataset.i18nTitle);
+  }
+
+  for (const node of document.querySelectorAll('[data-i18n-html]')) {
+    node.innerHTML = t(node.dataset.i18nHtml);
+  }
+}
+
+function applyLocale() {
+  applyStaticTranslations();
+  dom.localeSelect.value = getLocale();
+  buildTabs();
+  updateTabs();
+  updateLanguageChrome(state.active);
+  populateSamples(state.active);
+  updateGeneratedPreview();
+  renderReference();
+  renderCurrentOutput();
+  setStatus(state.status[state.active]);
+  dom.runButton.disabled = state.running;
+}
+
 function attachEvents() {
+  dom.localeSelect.addEventListener('change', () => {
+    setLocale(dom.localeSelect.value);
+    applyLocale();
+  });
+
   dom.runButton.addEventListener('click', handleRun);
   dom.resetButton.addEventListener('click', () => {
     applySample(state.sampleIndex[state.active]);
@@ -624,8 +726,11 @@ function start() {
     state.sampleIndex[languageId] = 0;
     state.stdin[languageId] = firstSample.stdin || '';
     state.outputs[languageId] = { kind: 'welcome' };
-    state.status[languageId] = { kind: 'ready', text: 'جاهز' };
+    state.status[languageId] = { kind: 'ready', key: 'status.ready' };
   }
+
+  applyStaticTranslations();
+  dom.localeSelect.value = getLocale();
 
   editor = createEditor({
     textarea: dom.textarea,

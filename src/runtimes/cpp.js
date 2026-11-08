@@ -50,32 +50,25 @@ function localizeCppError(rawMessage, transpiled) {
     column = null;
   }
 
-  let summary = 'تعذّر تنفيذ برنامج C++.';
-  let hint = 'راجع الكود المترجم، وتأكد من إغلاق الأقواس والفواصل المنقوطة.';
+  let summaryKey = 'cpp.runtimeGeneric';
 
   if (/cannot find library/i.test(text)) {
-    summary = 'المكتبة المطلوبة غير مدعومة في المشغّل التجريبي.';
-    hint = 'المشغّل يدعم أساسيات C++. جرّب إزالة المكتبة، أو انسخ الكود المترجم وشغّله باستخدام g++.';
+    summaryKey = 'cpp.runtimeLibrary';
   } else if (/Parsing Failure|parse error|Expected /i.test(text)) {
-    summary = 'تعذّر تحليل كود C++ المترجم.';
-    hint = 'تحقق من الأقواس، الفواصل المنقوطة، وعلامات الاقتباس.';
+    summaryKey = 'cpp.runtimeParse';
   } else if (/no main/i.test(text)) {
-    summary = 'لم يجد المشغّل دالة البداية.';
-    hint = 'أضف دالة رئيسية باستخدام: صحيح رئيسية() { ... }';
+    summaryKey = 'cpp.runtimeNoMain';
   } else if (/division by zero/i.test(text)) {
-    summary = 'حدثت قسمة على صفر أثناء التنفيذ.';
-    hint = 'تأكد أن المقسوم عليه ليس صفرًا قبل تنفيذ القسمة.';
+    summaryKey = 'cpp.runtimeDivision';
   } else if (/overflow|out of range/i.test(text)) {
-    summary = 'تجاوزت قيمة المتغير الحد المسموح به.';
-    hint = 'استخدم نوعًا أكبر مثل عشري، أو تحقق من قيم المتغيرات.';
+    summaryKey = 'cpp.runtimeOverflow';
   } else if (/infinite|too long|timed out/i.test(text)) {
-    summary = 'استغرق التنفيذ وقتًا طويلًا.';
-    hint = 'قد توجد حلقة لا تنتهي. تحقق من شرط التوقف.';
+    summaryKey = 'cpp.runtimeInfinite';
   }
 
   return {
-    summary,
-    hint,
+    summaryKey,
+    hintKey: summaryKey,
     details: swapIdentifiers(text, transpiled.reverseIdentifiers || new Map()),
     line,
     column,
@@ -95,8 +88,8 @@ export function runCpp(transpiled, { input = '', timeoutMs = DEFAULT_TIMEOUT_MS 
         exitCode: null,
         durationMs: performance.now() - startedAt,
         error: {
-          summary: 'تعذّر بدء مشغّل C++.',
-          hint: 'تأكد من تشغيل التطبيق عبر خادم محلي وليس بفتح الملف مباشرة.',
+          summaryKey: 'cpp.runtimeStartFailed',
+          hintKey: 'cpp.runtimeStartFailed',
           details: error && error.message ? error.message : String(error),
           line: null,
           column: null,
@@ -120,8 +113,8 @@ export function runCpp(transpiled, { input = '', timeoutMs = DEFAULT_TIMEOUT_MS 
         output: '',
         exitCode: null,
         error: {
-          summary: 'استغرق التنفيذ وقتًا طويلًا وتم إيقافه.',
-          hint: 'قد توجد حلقة لا تنتهي. تحقق من شرط التوقف داخل طالما أو لكل.',
+          summaryKey: 'cpp.runtimeTimeout',
+          hintKey: 'cpp.runtimeTimeout',
           details: 'Execution timed out.',
           line: null,
           column: null,
@@ -163,8 +156,8 @@ export function runCpp(transpiled, { input = '', timeoutMs = DEFAULT_TIMEOUT_MS 
         output,
         exitCode: null,
         error: {
-          summary: 'تعذّر تشغيل مشغّل C++.',
-          hint: 'تأكد من تشغيل التطبيق عبر خادم محلي، ثم أعد المحاولة.',
+          summaryKey: 'cpp.runtimeWorkerFailed',
+          hintKey: 'cpp.runtimeWorkerFailed',
           details: event.message || 'Worker failed to start.',
           line: null,
           column: null,

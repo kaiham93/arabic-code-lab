@@ -96,6 +96,8 @@ export function tokenizeSql(source) {
           line: startLine,
           column: startColumn,
           hint: 'أضف */ في نهاية التعليق.',
+          summaryKey: 'sql.unclosedBlockComment',
+          hintKey: 'sql.unclosedBlockComment',
         });
       }
 
@@ -127,6 +129,9 @@ export function tokenizeSql(source) {
           line: startLine,
           column: startColumn,
           hint: `أضف ${quote} لإغلاق النص.`,
+          summaryKey: 'sql.unclosedString',
+          hintKey: 'sql.unclosedString',
+          params: { quote },
         });
       }
 

@@ -114,6 +114,8 @@ export function tokenizeCpp(source) {
           line: startLine,
           column: startColumn,
           hint: 'أضف */ في نهاية التعليق.',
+          summaryKey: 'cpp.unclosedBlockComment',
+          hintKey: 'cpp.unclosedBlockComment',
         });
       }
 
@@ -146,6 +148,9 @@ export function tokenizeCpp(source) {
             line: startLine,
             column: startColumn,
             hint: quote === '"' ? 'أضف " لإغلاق النص.' : "أضف ' لإغلاق الحرف.",
+            summaryKey: 'cpp.unclosedString',
+            hintKey: 'cpp.unclosedString',
+            params: { quote },
           });
         }
       }
@@ -155,6 +160,9 @@ export function tokenizeCpp(source) {
           line: startLine,
           column: startColumn,
           hint: quote === '"' ? 'أضف " لإغلاق النص.' : "أضف ' لإغلاق الحرف.",
+          summaryKey: 'cpp.unclosedString',
+          hintKey: 'cpp.unclosedString',
+          params: { quote },
         });
       }
 
@@ -399,10 +407,14 @@ export function transpileCpp(source) {
   );
 
   const warnings = [];
+  const warningKeys = [];
 
   if (usesString) {
     const keyword = CPP_KEYWORDS.find((entry) => entry.ar === 'نص');
-    if (keyword?.warning) warnings.push(keyword.warning);
+    if (keyword?.warning) {
+      warnings.push(keyword.warning);
+      warningKeys.push({ key: 'warnings.cppString' });
+    }
   }
 
   let prelude = '';
@@ -420,6 +432,8 @@ export function transpileCpp(source) {
       line: 1,
       column: 1,
       hint: 'أضف دالة رئيسية مثل: صحيح رئيسية() { ... }، ثم استدعِ الدوال بداخلها.',
+      summaryKey: 'cpp.missingMain',
+      hintKey: 'cpp.missingMain',
     });
   }
 
@@ -440,6 +454,8 @@ export function transpileCpp(source) {
       line: 1,
       column: 1,
       hint: 'ضع توجيهات #include و#define في بداية الكود، أو أضف دالة رئيسية صريحة.',
+      summaryKey: 'cpp.nonLeadingPreprocessor',
+      hintKey: 'cpp.nonLeadingPreprocessor',
     });
   }
 
@@ -519,6 +535,7 @@ export function transpileCpp(source) {
     userCode: output,
     preludeLines,
     warnings,
+    warningKeys,
     identifierMap,
     reverseIdentifiers,
   };

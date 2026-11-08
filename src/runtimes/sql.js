@@ -28,6 +28,14 @@ let sqlModulePromise = null;
 let SQL = null;
 let database = null;
 
+function localizedError(message, summaryKey, hintKey = summaryKey, params = {}) {
+  const error = new Error(message);
+  error.summaryKey = summaryKey;
+  error.hintKey = hintKey;
+  error.params = params;
+  return error;
+}
+
 function loadScript(url) {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[data-dynamic-src="${url}"]`);
@@ -35,7 +43,7 @@ function loadScript(url) {
       if (existing.dataset.loaded === 'true') resolve();
       else {
         existing.addEventListener('load', () => resolve(), { once: true });
-        existing.addEventListener('error', () => reject(new Error('تعذّر تحميل مشغّل SQL.')), { once: true });
+        existing.addEventListener('error', () => reject(localizedError('تعذّر تحميل مشغّل SQL.', 'sql.loadFailed')), { once: true });
       }
       return;
     }
@@ -49,7 +57,7 @@ function loadScript(url) {
       resolve();
     }, { once: true });
     script.addEventListener('error', () => {
-      reject(new Error('تعذّر تحميل مشغّل SQL. تأكد من وجود ملفات vendor.'));
+      reject(localizedError('تعذّر تحميل مشغّل SQL. تأكد من وجود ملفات vendor.', 'sql.vendorMissing'));
     }, { once: true });
     document.head.append(script);
   });
@@ -57,7 +65,7 @@ function loadScript(url) {
 
 function ensureDatabase() {
   if (!database) {
-    throw new Error('قاعدة البيانات غير مهيأة بعد.');
+    throw localizedError('قاعدة البيانات غير مهيأة بعد.', 'sql.notReady');
   }
   return database;
 }
@@ -93,7 +101,7 @@ export function ensureSqlRuntime() {
       await loadScript(SQL_JS_URL.href);
 
       if (typeof globalThis.initSqlJs !== 'function') {
-        throw new Error('لم يُهيَّأ مشغّل SQL بشكل صحيح.');
+        throw localizedError('لم يُهيَّأ مشغّل SQL بشكل صحيح.', 'sql.notInitialized');
       }
 
       SQL = await globalThis.initSqlJs({
@@ -122,59 +130,59 @@ export async function resetDatabase() {
 
 function localizeSqlError(error) {
   const raw = String(error && error.message ? error.message : error).trim();
-  let summary = 'حدث خطأ في قاعدة البيانات.';
-  let hint = 'راجع أسماء الجداول والأعمدة وصياغة الأمر.';
+  let summaryKey = 'sql.generic';
+  let params = {};
 
   let match = raw.match(/no such table:\s*(.+)/i);
   if (match) {
-    summary = `لا يوجد جدول باسم «${match[1].trim()}».`;
-    hint = 'تحقق من اسم الجدول في قسم «بيانات الجداول».';
-    return { summary, hint, details: raw };
+    summaryKey = 'sql.noSuchTable';
+    params = { name: match[1].trim() };
+    return { summaryKey, hintKey: summaryKey, params, details: raw };
   }
 
   match = raw.match(/no such column:\s*(.+)/i);
   if (match) {
-    summary = `لا يوجد عمود باسم «${match[1].trim()}».`;
-    hint = 'تحقق من أسماء الأعمدة في قسم «بيانات الجداول».';
-    return { summary, hint, details: raw };
+    summaryKey = 'sql.noSuchColumn';
+    params = { name: match[1].trim() };
+    return { summaryKey, hintKey: summaryKey, params, details: raw };
   }
 
   match = raw.match(/no such function:\s*(.+)/i);
   if (match) {
-    summary = `الدالة «${match[1].trim()}» غير معروفة.`;
-    hint = 'تحقق من اسم الدالة أو استخدم إحدى دوال SQL المدعومة.';
-    return { summary, hint, details: raw };
+    summaryKey = 'sql.noSuchFunction';
+    params = { name: match[1].trim() };
+    return { summaryKey, hintKey: summaryKey, params, details: raw };
   }
 
   match = raw.match(/near "([^"]+)":\s*syntax error/i);
   if (match) {
-    summary = `خطأ في الصياغة قرب «${match[1]}».`;
-    hint = 'تحقق من الفواصل والأقواس وترتيب الكلمات.';
-    return { summary, hint, details: raw };
+    summaryKey = 'sql.syntaxNear';
+    params = { token: match[1] };
+    return { summaryKey, hintKey: summaryKey, params, details: raw };
   }
 
   match = raw.match(/table\s+(.+)\s+already exists/i);
   if (match) {
-    summary = `الجدول «${match[1].trim()}» موجود مسبقًا.`;
-    hint = 'استخدم اسمًا آخر أو احذف الجدول أولًا.';
-    return { summary, hint, details: raw };
+    summaryKey = 'sql.tableExists';
+    params = { name: match[1].trim() };
+    return { summaryKey, hintKey: summaryKey, params, details: raw };
   }
 
   match = raw.match(/UNIQUE constraint failed:\s*(.+)/i);
   if (match) {
-    summary = `تكرار في قيمة يجب أن تكون فريدة: «${match[1].trim()}».`;
-    hint = 'غيّر القيمة المكررة أو احذف الصف القديم أولًا.';
-    return { summary, hint, details: raw };
+    summaryKey = 'sql.unique';
+    params = { name: match[1].trim() };
+    return { summaryKey, hintKey: summaryKey, params, details: raw };
   }
 
   match = raw.match(/NOT NULL constraint failed:\s*(.+)/i);
   if (match) {
-    summary = `لا يمكن ترك العمود «${match[1].trim()}» فارغًا.`;
-    hint = 'أضف قيمة للعمود المطلوب داخل INSERT.';
-    return { summary, hint, details: raw };
+    summaryKey = 'sql.notNull';
+    params = { name: match[1].trim() };
+    return { summaryKey, hintKey: summaryKey, params, details: raw };
   }
 
-  return { summary, hint, details: raw };
+  return { summaryKey, hintKey: summaryKey, params, details: raw };
 }
 
 export async function runSql(transpiled) {
